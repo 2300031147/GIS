@@ -1,0 +1,92 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --agri-green: #2ecc71;
+  --agri-red: #e74c3c;
+  --agri-gold: #f1c40f;
+  --navy-deep: #0f172a;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--navy-deep);
+  color: white;
+  overflow: hidden;
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Leaflet Map Styling */
+.leaflet-container {
+  background: #0f172a !important;
+}
+
+/* Animations */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scan-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to bottom, transparent, rgba(46, 204, 113, 0.05), transparent);
+  pointer-events: none;
+  z-index: 1000;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.alert-pulse {
+  animation: pulse-red 2s infinite;
+}
+
+/* Navigation & Header */
+.header-gradient {
+  background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Buttons */
+.btn-agri {
+  transition: all 0.2s ease;
+}
+.btn-agri:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+.btn-agri:active {
+  transform: translateY(0);
+}

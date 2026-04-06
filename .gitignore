@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+build/
+.env
+*.pyc
+__pycache__/
+.DS_Store
+.vscode/
+.idea/
+data/*.db
+data/uploads/
