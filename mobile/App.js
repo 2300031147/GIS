@@ -7,7 +7,8 @@ import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
 
 // --- CONFIG ---
-const API_URL = "http://100.125.45.22:5000"; // Replace with Pi Tailscale IP
+// --- CONFIG ---
+const API_URL = "http://192.168.4.1:5000"; // Pi Hotspot IP
 
 // --- Database ---
 const db = SQLite.openDatabase('survey_offline.db');
