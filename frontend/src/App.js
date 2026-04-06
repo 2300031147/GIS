@@ -26,7 +26,7 @@ const weedIcon = new L.Icon({
 });
 
 // --- Config ---
-const IP_ADDRESS = "100.125.45.22";
+const IP_ADDRESS = "192.168.4.1"; // Pi's Hotspot IP
 const socket = io(`http://${IP_ADDRESS}:5000`);
 
 // --- Helpers ---

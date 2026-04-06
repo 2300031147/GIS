@@ -3,7 +3,7 @@ import time
 import paho.mqtt.client as mqtt
 
 # --- CONFIG ---
-BROKER_IP = "localhost"
+BROKER_IP = "192.168.4.1"
 TOPIC_MISSION = "gis/scout/mission"
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -20,8 +20,8 @@ def generate_lawnmower_grid(corners, sweep_width_m=15.0):
     lats = [p['lat'] for p in corners]
     lngs = [p['lng'] for p in corners]
     
-    min_lat, max_lat = min(lats), max_lats = max(lats)
-    min_lng, max_lng = min(lngs), max_lngs = max(lngs)
+    min_lat, max_lat = min(lats), max(lats)
+    min_lng, max_lng = min(lngs), max(lngs)
 
     # Approx degrees to meters (simple projection for local field)
     # 1 deg lat ~= 111,000m

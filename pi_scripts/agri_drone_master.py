@@ -30,13 +30,12 @@ DRONE_DATA = {
     "gps_sats": 0, "current_wp": 0, "total_wp": 0
 }
 MISSION_POINTS = []
-AUTO_START_MISSION = False
 
 # --- MQTT CLIENT ---
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
 def on_mqtt_message(client, userdata, msg):
-    global MISSION_POINTS, AUTO_START_MISSION
+    global MISSION_POINTS
     try:
         data = json.loads(msg.payload.decode())
         if data['type'] == "COMMAND":
@@ -45,7 +44,7 @@ def on_mqtt_message(client, userdata, msg):
             elif act == "DISARM": send_mavlink_command(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 21196)
             elif act == "SET_MODE": drone.set_mode(data.get('mode'))
         elif data['type'] == "MISSION_UPLOAD":
-            MISSION_POINTS = data['points']
+            MISSION_POINTS = data['waypoints'] if 'waypoints' in data else data.get('points', [])
             upload_mission_to_fc(MISSION_POINTS)
     except Exception as e: print(f"❌ MQTT Error: {e}")
 
@@ -96,7 +95,7 @@ def flight_loop():
                         )
             time.sleep(0.01)
         except Exception as e:
-            print(f"⚠️ Flight Loop Error: {e}")
+            time.sleep(0.1)
 
 # --- THREAD: VISION LOGIC ---
 def vision_loop():
@@ -108,7 +107,6 @@ def vision_loop():
         try:
             ret, frame = cap.read()
             if not ret: 
-                print("🚨 Camera Disconnected. Vision thread idling...")
                 time.sleep(5)
                 continue
 
@@ -120,7 +118,6 @@ def vision_loop():
                         conf = float(box.conf[0])
                         status = {0: "Healthy", 1: "Diseased", 2: "Weed"}.get(cls, "Unknown")
                         
-                        # INSTANT GEOTAGGING: Share state from Flight Thread
                         payload = {
                             "drone_id": "jetson-master-01",
                             "lat": DRONE_DATA["lat"],
@@ -133,33 +130,31 @@ def vision_loop():
                         print(f"🌾 AI Found {status} at {DRONE_DATA['lat']:.6f}, {DRONE_DATA['lon']:.6f}")
             else:
                 time.sleep(2) # Simulation fallback
-        except Exception as e:
-            print(f"🚨 Vision Crash! {e}. Flight control remains active.")
-            time.sleep(5)
-
-# --- THREAD: MQTT INTERFACE ---
-def mqtt_interface():
-    while True:
-        try:
-            mqtt_client.connect(PI_HOTSPOT_IP, 1883, 60)
-            mqtt_client.subscribe(TOPIC_MISSION)
-            mqtt_client.loop_forever()
         except:
-            print("📡 Pi Hotspot not found. Retrying...")
             time.sleep(5)
 
 def telemetry_reporter():
     while True:
-        mqtt_client.publish(TOPIC_TELEM, json.dumps(DRONE_DATA))
-        time.sleep(0.5)
+        try:
+            mqtt_client.publish(TOPIC_TELEM, json.dumps(DRONE_DATA))
+            time.sleep(0.5)
+        except:
+            time.sleep(5)
 
 if __name__ == "__main__":
-    t1 = threading.Thread(target=flight_loop, daemon=True)
-    t2 = threading.Thread(target=vision_loop, daemon=True)
-    t3 = threading.Thread(target=mqtt_interface, daemon=True)
-    t4 = threading.Thread(target=telemetry_reporter, daemon=True)
-    
-    t1.start(); t2.start(); t3.start(); t4.start()
+    # Initialize MQTT
+    try:
+        mqtt_client.connect(PI_HOTSPOT_IP, 1883, 60)
+        mqtt_client.subscribe(TOPIC_MISSION)
+        mqtt_client.loop_start() # Start MQTT in a background thread managed by paho
+        print(f"✅ Connected to Pi Hotspot: {PI_HOTSPOT_IP}")
+    except:
+        print("🚨 Initial MQTT connection failed. Ensure Pi is reachable.")
+
+    # Start Worker Threads
+    threading.Thread(target=flight_loop, daemon=True).start()
+    threading.Thread(target=vision_loop, daemon=True).start()
+    threading.Thread(target=telemetry_reporter, daemon=True).start()
     
     print("\n🚀 AGRI-DRONE MASTER ONLINE")
     print("--------------------------------")
