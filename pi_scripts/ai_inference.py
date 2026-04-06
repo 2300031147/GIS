@@ -13,16 +13,33 @@ except ImportError:
     print("⚠️ YOLOv8 (ultralytics) not installed. Falling back to simulation mode.")
 
 # --- CONFIG ---
-BROKER_IP = "localhost" # Set to Pi's Tailscale IP
+BROKER_IP = "192.168.4.1" # Pi Hotspot IP
 TOPIC_SURVEY = "agri/survey/data"
-MODEL_PATH = "models/crop_health_v1.pt" # Path to your custom-trained agricultural model
+TOPIC_TELEM = "gis/scout/telemetry"
+MODEL_PATH = "models/crop_health_v1.pt" 
+
+# --- STATE ---
+current_lat = 0.0
+current_lon = 0.0
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
+def on_message(client, userdata, msg):
+    global current_lat, current_lon
+    if msg.topic == TOPIC_TELEM:
+        try:
+            data = json.loads(msg.payload.decode())
+            current_lat = data.get('lat', current_lat)
+            current_lon = data.get('lon', current_lon)
+        except:
+            pass
+
 def connect_mqtt():
     try:
+        client.on_message = on_message
         client.connect(BROKER_IP, 1883, 60)
-        print(f"✅ AI Linked to Broker at {BROKER_IP}")
+        client.subscribe(TOPIC_TELEM)
+        print(f"✅ AI Linked to Broker at {BROKER_IP} (Subscribed to Telemetry)")
     except Exception as e:
         print(f"❌ Connection Failed: {e}")
 
@@ -47,40 +64,37 @@ def run_detection():
         # GIS Mappings (Adjust based on your model's classes)
         # Class 0: Healthy, Class 1: Diseased, Class 2: Weeds
         status_map = {0: "Healthy", 1: "Diseased", 2: "Weed"}
-        crop_name = "Corn" # Default for this field
+        crop_name = "Corn" 
 
         if model:
-            # RUN REAL AI INFERENCE
             results = model(frame, conf=0.5)
             for r in results:
                 for box in r.boxes:
                     cls = int(box.cls[0])
                     conf = float(box.conf[0])
                     status = status_map.get(cls, "Unknown")
-                    
-                    # Mock GPS (Real script would integrate with Mavlink to get current drone lat/lon)
-                    # For now we use placeholder logic
                     publish_detection(status, crop_name, conf)
         else:
-            # FALLBACK SIMULATION (For hackathon demo without Jetson)
+            # Simulation Mode
             time.sleep(5)
             publish_detection("Healthy", "Soybean", 0.98)
 
 def publish_detection(status, crop, conf):
-    # This payload matches the required GIS format
+    global current_lat, current_lon
     payload = {
         "drone_id": "jetson-01",
-        "lat": 16.506 + (time.time() % 100) * 0.0001, # Placeholder movement
-        "lon": 80.648 + (time.time() % 100) * 0.0001,
-        "crop_status": status.lower(), # User requested lowercase "weed", "diseased", etc.
+        "lat": current_lat, # Live GPS from Flight Controller!
+        "lon": current_lon, 
+        "crop_status": status.lower(), 
         "crop_type": crop,
         "confidence": conf,
         "image_url": "" 
     }
-    print(f"🌾 AI Found {status} {crop} (Conf: {conf:.2f})")
+    print(f"🌾 AI Found {status} {crop} at {current_lat}, {current_lon}")
     client.publish(TOPIC_SURVEY, json.dumps(payload))
 
 if __name__ == "__main__":
+    client.loop_start() # Start MQTT in background
     connect_mqtt()
     try:
         run_detection()

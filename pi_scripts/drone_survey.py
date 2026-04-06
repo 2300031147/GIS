@@ -4,8 +4,8 @@ import json
 import time
 import threading
 
-# 🔴 CONFIGURATION - YOUR TAILSCALE IP
-BROKER_IP = "100.125.45.22"
+# 🔴 CONFIGURATION - PI HOTSPOT IP
+BROKER_IP = "192.168.4.1" # Example Pi Hotspot IP
 TOPIC_MISSION = "gis/scout/mission"
 TOPIC_TELEM = "gis/scout/telemetry"
 
@@ -13,9 +13,9 @@ COPTER_MODES = {
     0: 'STABILIZE', 3: 'AUTO', 4: 'GUIDED', 5: 'LOITER', 6: 'RTL', 9: 'LAND'
 }
 
-print("🔌 Connecting to Mavlink Router (UDP)...")
-# Use 0.0.0.0 to listen on all interfaces (Localhost + Tailscale/LAN)
-drone = mavutil.mavlink_connection('udpin:0.0.0.0:14550')
+print("🔌 Connecting to Flight Controller (UART)...")
+# Connect physically via UART. Ensure baud rate matches your FC settings.
+drone = mavutil.mavlink_connection('/dev/ttyTHS1', baud=921600)
 
 print("⏳ Waiting for heartbeat...")
 while True:
