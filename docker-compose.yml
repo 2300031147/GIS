@@ -17,9 +17,9 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - mqtt
+      - mosquitto
     environment:
-      - MQTT_BROKER=mqtt
+      - MQTT_BROKER=mosquitto
     volumes:
       - ./data:/app/data
 

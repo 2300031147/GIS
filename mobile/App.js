@@ -6,9 +6,8 @@ import * as SQLite from 'expo-sqlite';
 import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
 
-// --- CONFIG ---
-// --- CONFIG ---
-const API_URL = "http://192.168.4.1:5000"; // Pi Hotspot IP
+// --- DEFAULT CONFIG (Change in-app settings if on Tailscale) ---
+const DEFAULT_API_URL = "http://192.168.4.1:5000"; 
 
 // --- Database ---
 const db = SQLite.openDatabase('survey_offline.db');
@@ -21,6 +20,9 @@ export default function App() {
   const [reports, setReports] = useState([]);
   const [isSyncing, setSyncing] = useState(false);
   
+  const [currentNotes, setCurrentNotes] = useState("");
+  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
+  const [isSettingsVisible, setSettingsVisible] = useState(false);
   const cameraRef = useRef(null);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function App() {
       // Setup Local DB
       db.transaction(tx => {
         tx.executeSql(
-          'CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, lat REAL, lon REAL, timestamp TEXT, status TEXT, photo_uri TEXT, photo_base64 TEXT, notes TEXT, synced INTEGER DEFAULT 0)'
+          'CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, lat REAL, lon REAL, timestamp TEXT, crop_status TEXT, photo_uri TEXT, photo_base64 TEXT, notes TEXT, synced INTEGER DEFAULT 0)'
         );
         loadLocalReports(tx);
       });
@@ -50,7 +52,7 @@ export default function App() {
 
   const fetchDetections = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/history`);
+      const res = await axios.get(`${apiUrl}/api/history`);
       setPiDetections(res.data);
     } catch (err) {
       console.log("⚠️ Pi server unreachable for markers");
@@ -74,16 +76,21 @@ export default function App() {
   };
 
   const saveReport = (uri, b64) => {
+    if (!location) {
+      return Alert.alert("Wait", "Waiting for GPS lock...");
+    }
+    
     const timestamp = new Date().toISOString();
     const lat = location.coords.latitude;
     const lon = location.coords.longitude;
     
     db.transaction(tx => {
       tx.executeSql(
-        'INSERT INTO reports (lat, lon, timestamp, crop_status, photo_uri, photo_base64, synced) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [lat, lon, timestamp, 'Verification', uri, b64, 0],
+        'INSERT INTO reports (lat, lon, timestamp, crop_status, photo_uri, photo_base64, notes, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [lat, lon, timestamp, 'Field Check', uri, b64, currentNotes, 0],
         () => {
-          Alert.alert("Success", "Report saved locally (Offline Ready)");
+          Alert.alert("Success", "Ground Truth Saved (Offline Enabled)");
+          setCurrentNotes(""); // Reset notes
           loadLocalReports(tx);
         }
       );
@@ -102,19 +109,22 @@ export default function App() {
 
     try {
       for (const item of unsynced) {
-        await axios.post(`${API_URL}/gis/survey/data`, {
+        await axios.post(`${apiUrl}/gis/survey/data`, {
           drone_id: "field-officer-mobile",
           lat: item.lat,
           lon: item.lon,
           crop_status: "verified",
           crop_type: "Inspection",
           confidence: 1.0,
-          image_base64: item.photo_base64
+          image_base64: item.photo_base64,
+          notes: item.notes
         });
         
         db.transaction(tx => {
           tx.executeSql('UPDATE reports SET synced = 1 WHERE id = ?', [item.id]);
         });
+        // Update UI list for this item immediately
+        loadLocalReports(db); 
       }
       Alert.alert("Sync Complete", `Successfully uploaded ${unsynced.length} reports.`);
       db.transaction(loadLocalReports);
@@ -132,6 +142,9 @@ export default function App() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => setSettingsVisible(true)}>
+          <Text style={{ color: 'white', fontSize: 18 }}>⚙️</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>National Crop Surveyor</Text>
         <TouchableOpacity onPress={syncData} disabled={isSyncing}>
           <Text style={[styles.syncButton, isSyncing && { opacity: 0.5 }]}>
@@ -139,6 +152,24 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Settings Modal */}
+      <Modal visible={isSettingsVisible} transparent animationType="fade">
+        <View style={styles.modalBg}>
+          <View style={styles.settingsBox}>
+            <Text style={styles.settingsTitle}>Tailscale / Network Config</Text>
+            <TextInput 
+              style={styles.settingsInput} 
+              value={apiUrl} 
+              onChangeText={setApiUrl} 
+              placeholder="http://100.x.y.z:5000"
+            />
+            <TouchableOpacity style={styles.settingsButton} onPress={() => setSettingsVisible(false)}>
+              <Text style={{ color: 'white', fontWeight: '900' }}>SAVE IP</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Map View */}
       {location && (
@@ -186,6 +217,17 @@ export default function App() {
             <TouchableOpacity style={styles.closeCamera} onPress={() => setCameraVisible(false)}>
               <Text style={{ color: 'white', fontSize: 20 }}>✕</Text>
             </TouchableOpacity>
+            
+            <View style={styles.notesContainer}>
+              <TextInput 
+                placeholder="Add Ground Observation..." 
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                style={styles.notesInput}
+                value={currentNotes}
+                onChangeText={setCurrentNotes}
+              />
+            </View>
+
             <TouchableOpacity style={styles.takePicButton} onPress={takePhoto}>
               <View style={styles.outerCircle}>
                 <View style={styles.innerCircle} />
@@ -219,17 +261,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   header: { 
     height: 100, paddingTop: 50, paddingHorizontal: 20, 
-    backgroundColor: '#1a1a1a', flexDirection: 'row', justifyContent: 'space-between' 
+    backgroundColor: '#0f172a', flexDirection: 'row', justifyContent: 'space-between' 
   },
-  headerTitle: { color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5, uppercase: true },
-  syncButton: { color: '#2ecc71', fontWeight: '900', fontSize: 12 },
+  headerTitle: { color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5, textTransform: 'uppercase' },
+  syncButton: { color: '#10b981', fontWeight: '900', fontSize: 12 },
   map: { height: 350, width: '100%' },
   captureButton: { 
-    backgroundColor: '#1a1a1a', margin: 20, padding: 20, 
-    borderRadius: 8, alignItems: 'center', shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20
+    backgroundColor: '#0f172a', margin: 20, padding: 20, 
+    borderRadius: 12, alignItems: 'center', shadowColor: '#10b981', 
+    shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)'
   },
-  captureText: { color: 'white', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+  captureText: { color: '#10b981', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
   reportsSection: { flex: 1, padding: 20 },
   sectionTitle: { fontSize: 10, fontWeight: '900', color: '#ccc', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 2 },
   reportItem: { 
@@ -240,8 +283,19 @@ const styles = StyleSheet.create({
   reportText: { fontSize: 12, color: '#333', fontWeight: 'bold' },
   reportStatus: { fontSize: 10, fontWeight: '900' },
   cameraFrame: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 60 },
+  notesContainer: { 
+    width: '80%', backgroundColor: 'rgba(0,0,0,0.6)', 
+    borderRadius: 8, padding: 10, marginBottom: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'
+  },
+  notesInput: { color: 'white', fontSize: 13, fontWeight: 'bold' },
   takePicButton: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   outerCircle: { width: 66, height: 66, borderRadius: 33, borderWidth: 3, borderColor: 'white', justifyContent: 'center', alignItems: 'center' },
   innerCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'white' },
-  closeCamera: { position: 'absolute', top: 50, right: 30, backgroundColor: 'rgba(0,0,0,0.8)', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }
+  closeCamera: { position: 'absolute', top: 50, right: 30, backgroundColor: 'rgba(0,0,0,0.8)', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  settingsBox: { backgroundColor: '#0f172a', padding: 25, borderRadius: 15, width: '80%', borderWidth: 1, borderColor: '#10b981' },
+  settingsTitle: { color: 'white', fontSize: 12, fontWeight: '900', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 1 },
+  settingsInput: { backgroundColor: 'rgba(255,255,255,0.05)', color: 'white', padding: 15, borderRadius: 8, marginBottom: 15, fontSize: 13, borderBottomWidth: 2, borderBottomColor: '#10b981' },
+  settingsButton: { backgroundColor: '#10b981', padding: 15, borderRadius: 8, alignItems: 'center' }
 });

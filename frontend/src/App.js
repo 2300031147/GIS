@@ -26,7 +26,7 @@ const weedIcon = new L.Icon({
 });
 
 // --- Config ---
-const IP_ADDRESS = "192.168.4.1"; // Pi's Hotspot IP
+const IP_ADDRESS = window.location.hostname || "192.168.4.1"; 
 const socket = io(`http://${IP_ADDRESS}:5000`);
 
 // --- Helpers ---
@@ -123,6 +123,7 @@ function App() {
     const [scout, setScout] = useState({ lat: 16.506, lon: 80.648, alt: 0, bat: 0, gps_sats: 0, status: "OFFLINE", speed: 0, mode: "UNKNOWN" });
     const [followMode, setFollowMode] = useState(true);
     const [takeoffAlt, setTakeoffAlt] = useState(10);
+    const [flightMode, setFlightMode] = useState('LOITER');
     const [missionProgress, setMissionProgress] = useState(0);
     const [detections, setDetections] = useState([]);
     const [analytics, setAnalytics] = useState({ total_detections: 0, acres_scanned: 0, distribution: {} });
@@ -193,29 +194,40 @@ function App() {
                                 </div>
                                 <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${scout.status === 'ARMED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-slate-400'}`}>{scout.status}</span>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                                <div><div className="text-[8px] text-slate-500 uppercase font-black">Altitude</div><div className="text-sm font-mono font-bold text-emerald-400">{scout.alt.toFixed(1)}m</div></div>
-                                <div><div className="text-[8px] text-slate-500 uppercase font-black">Speed</div><div className="text-sm font-mono font-bold">{scout.speed}m/s</div></div>
-                                <div><div className="text-[8px] text-slate-500 uppercase font-black">Battery</div><div className="text-sm font-mono font-bold">{scout.bat}%</div></div>
-                                <div><div className="text-[8px] text-slate-500 uppercase font-black">GNSS</div><div className="text-sm font-mono font-bold text-sky-400">{scout.gps_sats} SATS</div></div>
+                            <div className="mt-4 pt-3 border-t border-slate-800">
+                                <div className="flex justify-between text-[8px] font-black uppercase mb-1">
+                                    <span className="text-slate-500">Mission Progress</span>
+                                    <span className="text-emerald-400">{missionProgress}%</span>
+                                </div>
+                                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full transition-all duration-500" style={{ width: `${missionProgress}%` }}></div>
+                                </div>
                             </div>
                         </div>
                     </Card>
 
-                    <Card title="Mission Control">
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            <Button variant="success" onClick={() => sendCommand('arm')}>ARM</Button>
-                            <Button variant="warning" onClick={() => sendCommand('disarm')}>KILL</Button>
-                            <Button variant="danger" onClick={() => sendCommand('land')}>LAND</Button>
-                        </div>
-                        <div className="flex gap-2">
-                            <select id="mode-select" className="flex-1 text-[10px] font-bold bg-slate-50 border border-slate-200 rounded px-2 outline-none uppercase h-8">
-                                <option value="STABILIZE">STABILIZE</option>
-                                <option value="LOITER">LOITER</option>
-                                <option value="AUTO">AUTO MISSION</option>
-                                <option value="RTL">RETURN HOME</option>
-                            </select>
-                            <Button variant="secondary" className="h-8" onClick={() => sendCommand('set_mode', { mode: document.getElementById('mode-select').value })}>SET</Button>
+                    <Card title="Mission Control" className="bg-gradient-to-br from-white to-slate-50 border-emerald-100 shadow-sm">
+                        <div className="space-y-4">
+                            <RcSlider label="Takeoff Alt" val={takeoffAlt} setVal={setTakeoffAlt} />
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <Button variant="success" onClick={() => sendCommand('arm')}>ARM</Button>
+                                <Button variant="primary" onClick={() => sendCommand('takeoff', { alt: takeoffAlt })}>TAKEOFF</Button>
+                                <Button variant="warning" onClick={() => sendCommand('disarm')}>KILL</Button>
+                                <Button variant="danger" onClick={() => sendCommand('land')}>LAND</Button>
+                            </div>
+                            <div className="flex gap-2 pt-2 border-t border-slate-50">
+                                <select 
+                                    value={flightMode} 
+                                    onChange={(e) => setFlightMode(e.target.value)}
+                                    className="flex-1 text-[10px] font-bold bg-slate-50 border border-slate-200 rounded px-2 outline-none uppercase h-8"
+                                >
+                                    <option value="STABILIZE">STABILIZE</option>
+                                    <option value="LOITER">LOITER</option>
+                                    <option value="AUTO">AUTO MISSION</option>
+                                    <option value="RTL">RETURN HOME</option>
+                                </select>
+                                <Button variant="secondary" className="h-8" onClick={() => sendCommand('set_mode', { mode: flightMode })}>SET</Button>
+                            </div>
                         </div>
                     </Card>
 
@@ -305,11 +317,24 @@ function App() {
                     <div className="opacity-40">ENCRYPTION: AES-256-GCM</div>
                 </div>
 
-                <div className="absolute bottom-8 left-8 bg-white/95 backdrop-blur-lg px-5 py-4 rounded-2xl shadow-2xl z-[1000] border border-slate-200 min-w-[240px]">
-                    <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-2 border-b border-slate-50 pb-1">Navigation HUD</div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><div className="text-[8px] font-black text-slate-400 uppercase">LAT</div><div className="text-xs font-mono font-bold">{scout.lat.toFixed(6)}°N</div></div>
-                        <div><div className="text-[8px] font-black text-slate-400 uppercase">LON</div><div className="text-xs font-mono font-bold">{scout.lon.toFixed(6)}°E</div></div>
+                <div className="absolute bottom-8 left-8 bg-slate-900/90 backdrop-blur-xl px-6 py-5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[1000] border border-white/10 min-w-[280px] text-white">
+                    <div className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                        Tactical Navigation HUD
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Latitude</div>
+                            <div className="text-sm font-mono font-bold tracking-tight">{scout.lat.toFixed(7)}°</div>
+                        </div>
+                        <div>
+                            <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Longitude</div>
+                            <div className="text-sm font-mono font-bold tracking-tight">{scout.lon.toFixed(7)}°</div>
+                        </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-[8px] font-mono text-slate-400">
+                        <span>SYS_UPTIME: {(performance.now()/1000).toFixed(0)}S</span>
+                        <span className="text-emerald-500/50 italic font-black">STREAMING_REALTIME</span>
                     </div>
                 </div>
             </main>

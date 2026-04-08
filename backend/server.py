@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-BROKER = "localhost" # The Pi itself
+BROKER = os.getenv("MQTT_BROKER", "localhost") 
 TOPIC_MISSION = "gis/scout/mission"
 TOPIC_TELEM_SCOUT = "gis/scout/telemetry"
 TOPIC_SURVEY = "agri/survey/data"
@@ -26,7 +26,7 @@ TOPIC_SURVEY = "agri/survey/data"
 DB_PATH = os.path.join("data", "survey.db")
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS detections
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +43,7 @@ def init_db():
 
 def save_detection(data):
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         c = conn.cursor()
         c.execute("INSERT INTO detections (timestamp, drone_id, lat, lon, crop_status, crop_type, confidence, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                   (datetime.now().isoformat(), data.get('drone_id', 'jetson-01'), data.get('lat'), data.get('lon'), 
@@ -71,6 +71,10 @@ def on_message(client, userdata, msg):
             print(f"🌾 CROP SURVEY DATA: {data}")
             save_detection(data)
             socketio.emit('survey_update', data)
+        
+        # Additional state tracking if mission data is present
+        if 'current_wp' in data:
+            socketio.emit('mission_status', {"current": data['current_wp'], "total": data.get('total_wp', 0)})
             
     except Exception as e:
         print(f"❌ Errror processing message: {e}")
@@ -138,9 +142,15 @@ def set_flight_mode():
     mqtt_client.publish(TOPIC_MISSION, json.dumps({"type": "COMMAND", "act": "SET_MODE", "mode": mode}))
     return jsonify({"status": f"Mode {mode} Sent"})
 
+@app.route('/rc_override', methods=['POST'])
+def rc_override():
+    channels = request.json.get('channels')
+    mqtt_client.publish(TOPIC_MISSION, json.dumps({"type": "COMMAND", "act": "RC_OVERRIDE", "channels": channels}))
+    return jsonify({"status": "RC Override Sent"})
+
 @app.route('/api/history', methods=['GET'])
 def get_history():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM detections ORDER BY timestamp DESC LIMIT 100")
@@ -150,7 +160,7 @@ def get_history():
 
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     c = conn.cursor()
     c.execute("SELECT crop_status, COUNT(*) FROM detections GROUP BY crop_status")
     stats = dict(c.fetchall())

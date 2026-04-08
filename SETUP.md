@@ -36,12 +36,12 @@ The "Boots on the Ground" tool for field officers to verify AI findings.
     ```
     *This starts the Mosquitto MQTT Broker, Flask API, and React Dashboard.*
 
-### Phase 2: AI Survey Simulation
-1.  **Run Simulation:**
+### Phase 2: Autonomous Drone / Master Logic
+1.  **Start Drone Master:**
     ```bash
-    python3 pi_scripts/crop_detect_sim.py
+    python3 pi_scripts/agri_drone_master.py
     ```
-    *This simulates a drone detecting different crop conditions and publishing data to the backend.*
+    *This script handles MAVLink telemetry, mission uploads, and AI vision simulation.*
 
 ### Phase 3: Mobile Verification (Surveyor Phone)
 1.  **Start Expo App:**
@@ -49,20 +49,20 @@ The "Boots on the Ground" tool for field officers to verify AI findings.
     cd mobile
     npx expo start
     ```
-    *Scan the QR code with the Expo Go app to start field verification.*
+    *Scan the QR code with the Expo Go app. Use the ⚙️ Settings gear in the app to point to your laptop's Tailscale IP.*
 
 ---
 
 ## 📂 Project Structure
 *   `backend/`: Flask server with SQLite integration (`data/survey.db`).
-*   `dashboard/` (frontend): React-based Command Center.
+*   `frontend/`: React-based Command Center Dashboard.
 *   `mobile/`: Expo Surveyor app.
-*   `pi_scripts/`: Drone control and simulated detection logic.
+*   `pi_scripts/`: Drone master control and grid generation logic.
 *   `data/`: Persistent storage for geospatial logs.
 
 ---
 
 ## 🔧 Connectivity
-*   **Broker IP:** Ensure your Tailscale IP is updated in `App.js` and `pi_scripts/`.
+*   **Dynamic Networking**: The dashboard and master scripts now use `window.location.hostname` or environment variables to detect your laptop/Tailscale IP automatically.
 *   **Local Web Access:** `http://localhost:3000`
 *   **API Access:** `http://localhost:5000/api/history`
