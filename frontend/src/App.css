@@ -3,90 +3,115 @@
 @import 'tailwindcss/utilities';
 
 :root {
-  --agri-green: #2ecc71;
-  --agri-red: #e74c3c;
-  --agri-gold: #f1c40f;
-  --navy-deep: #0f172a;
+  /* Professional Neutral Palette */
+  --bg-deep: #0a0c10;
+  --bg-panel: #11141b;
+  --bg-card: rgba(22, 27, 34, 0.7);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-dim: rgba(255, 255, 255, 0.05);
+  
+  /* Meaningful Accents */
+  --accent-primary: #10b981; /* Emerald for Agricultural Success */
+  --accent-secondary: #3b82f6; /* Blue for Technology/Telemetry */
+  --accent-warning: #f59e0b; /* Amber */
+  --accent-danger: #ef4444; /* Rose */
+  
+  /* Text */
+  --text-main: #e6edf3;
+  --text-muted: #848d97;
+  --text-dim: #484f58;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--navy-deep);
-  color: white;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
   overflow: hidden;
 }
 
-/* Glassmorphism Panels */
-.glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+/* Glassmorphism - Refined & Non-AI-ish */
+.glass-surface {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
 }
 
-/* Custom Scrollbar */
+.panel-header {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+/* Scrollbar - Minimal */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.1);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: var(--border-subtle);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.3);
+  background: var(--text-dim);
 }
 
-/* Leaflet Map Styling */
+/* Leaflet Overrides for Professionalism */
 .leaflet-container {
-  background: #0f172a !important;
+  background: var(--bg-deep) !important;
 }
 
-/* Animations */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+.leaflet-tile-pane {
+  filter: grayscale(0.8) brightness(0.7) contrast(1.1) invert(1);
 }
 
-.scan-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to bottom, transparent, rgba(46, 204, 113, 0.05), transparent);
-  pointer-events: none;
-  z-index: 1000;
-  animation: scanline 8s linear infinite;
+.leaflet-popup-content-wrapper {
+  background: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
 }
 
-@keyframes pulse-red {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+.leaflet-popup-tip {
+  background: var(--bg-panel) !important;
 }
 
-.alert-pulse {
-  animation: pulse-red 2s infinite;
+/* Data Display Typography */
+.font-mono-data {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+  letter-spacing: -0.02em;
 }
 
-/* Navigation & Header */
-.header-gradient {
-  background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+.uppercase-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
 }
 
-/* Buttons */
-.btn-agri {
-  transition: all 0.2s ease;
+/* Status Indicators */
+.status-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
-.btn-agri:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
+
+.status-glow-emerald {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
-.btn-agri:active {
-  transform: translateY(0);
+
+/* Utility for Depth */
+.depth-shadow {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Professional Transitions */
+.transition-standard {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

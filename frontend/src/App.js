@@ -1,10 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Polyline, Polygon } from 'react-leaflet';
-import axios from 'axios';
-import io from 'socket.io-client';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import './App.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Icons ---
 const scoutIcon = new L.Icon({
@@ -70,34 +64,60 @@ function generateGrid(polyPoints) {
     return grid;
 }
 
-// --- UI Components ---
-const Card = ({ children, title, className = "" }) => (
-    <div className={`bg-white p-4 rounded-lg shadow-sm border border-slate-200 ${className}`}>
-        {title && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-50 pb-1">{title}</h3>}
-        {children}
-    </div>
+// --- UI Components (Professional Refactor) ---
+const Card = ({ children, title, className = "", icon }) => (
+    <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`glass-surface rounded-xl overflow-hidden mb-4 ${className}`}
+    >
+        {title && (
+            <div className="panel-header px-4 py-3 flex items-center justify-between">
+                <h3 className="uppercase-label flex items-center gap-2">
+                    {icon}
+                    {title}
+                </h3>
+            </div>
+        )}
+        <div className="p-4">
+            {children}
+        </div>
+    </motion.div>
 );
 
-const Button = ({ children, onClick, variant = "primary", className = "" }) => {
+const Button = ({ children, onClick, variant = "primary", className = "", disabled = false }) => {
     const variants = {
-        primary: "bg-slate-900 text-white hover:bg-slate-800",
-        secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50",
-        danger: "bg-red-600 text-white hover:bg-red-700",
-        success: "bg-emerald-600 text-white hover:bg-emerald-700",
-        warning: "bg-amber-500 text-white hover:bg-amber-600"
+        primary: "bg-emerald-600/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/20",
+        secondary: "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10",
+        danger: "bg-rose-600/10 text-rose-400 border border-rose-500/30 hover:bg-rose-600/20",
+        success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/20",
+        warning: "bg-amber-600/10 text-amber-400 border border-amber-500/30 hover:bg-amber-600/20"
     };
+    
     return (
-        <button onClick={onClick} className={`px-4 py-2 rounded-md text-[10px] font-bold uppercase transition-all active:scale-95 ${variants[variant]} ${className}`}>
+        <motion.button 
+            whileHover={!disabled ? { scale: 1.02, translateY: -1 } : {}}
+            whileTap={!disabled ? { scale: 0.98 } : {}}
+            onClick={onClick} 
+            disabled={disabled}
+            className={`px-3 py-2 rounded-lg text-[11px] font-bold uppercase transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+        >
             {children}
-        </button>
+        </motion.button>
     );
 };
 
 const RcSlider = ({ label, val, setVal }) => (
-    <div className="flex items-center gap-2">
-        <span className="text-[10px] w-12 font-mono text-slate-500">{label}</span>
-        <input type="range" min="1000" max="2000" step="10" value={val} onChange={(e) => setVal(e.target.value)} className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
-        <span className="text-[10px] w-8 font-mono">{val}</span>
+    <div className="space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+            <span className="uppercase-label">{label}</span>
+            <span className="font-mono text-[11px] text-emerald-400">{val}m</span>
+        </div>
+        <input 
+            type="range" min="1000" max="2000" step="10" 
+            value={val} onChange={(e) => setVal(e.target.value)} 
+            className="w-full h-1 bg-white/5 rounded-lg appearance-none cursor-pointer accent-emerald-500" 
+        />
     </div>
 );
 
@@ -177,165 +197,281 @@ function App() {
     const generatePath = () => { if (polygonPoints.length < 3) return alert("Define area first!"); setWaypoints(generateGrid(polygonPoints)); setDrawMode('mission'); };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-            <aside className="w-80 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col z-10 shadow-2xl">
-                <div className="p-6 border-b border-slate-100 bg-slate-900 text-white flex justify-between items-baseline">
-                    <h1 className="text-xl font-black tracking-tighter uppercase italic">GIS <span className="text-emerald-400">Scan</span></h1>
-                    <span className="text-[9px] font-bold opacity-50">v4.2.0-PRO</span>
+        <div className="flex h-screen w-screen overflow-hidden bg-[#05070a] font-sans text-slate-100">
+            {/* Sidebar Container */}
+            <aside className="w-80 flex-shrink-0 border-r border-white/5 bg-[#0a0c10] flex flex-col z-20 shadow-2xl">
+                {/* Brand Header */}
+                <div className="p-6 border-b border-white/5 bg-[#11141b]/50 backdrop-blur-md flex justify-between items-center">
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                             <div className="w-2 h-6 bg-emerald-500 rounded-sm"></div>
+                             GIS <span className="font-light text-slate-400">CONTROL</span>
+                        </h1>
+                        <span className="text-[9px] font-mono text-emerald-500/50 mt-1 uppercase tracking-widest">Autonomous Survey Protocol</span>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <Card title="UAV Telemetry">
-                        <div className="p-3 rounded-lg bg-slate-900 text-white border border-slate-800 shadow-inner">
-                            <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${Date.now() - (scout.lastHeartbeat || 0) < 3000 ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'}`}></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Scout-01 Unit</span>
+                {/* Sidebar Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+                    {/* Telemetry Card */}
+                    <Card title="Telemetry Link" icon={<span className="text-blue-400">⚡</span>}>
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 relative overflow-hidden">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`status-point ${Date.now() - (scout.lastHeartbeat || 0) < 3000 ? 'bg-emerald-500 status-glow-emerald' : 'bg-rose-500'}`}></div>
+                                        <span className="font-mono-data text-[11px] font-bold text-slate-200">SCOUT_UNIT_01</span>
+                                    </div>
+                                    <div className="text-[9px] text-slate-500 font-mono tracking-tighter uppercase">ID: 4X-99 ALPHA</div>
                                 </div>
-                                <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${scout.status === 'ARMED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-slate-400'}`}>{scout.status}</span>
+                                <div className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${scout.status === 'ARMED' ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/5' : 'border-white/10 text-slate-500 bg-white/5'}`}>
+                                    {scout.status}
+                                </div>
                             </div>
-                            <div className="mt-4 pt-3 border-t border-slate-800">
-                                <div className="flex justify-between text-[8px] font-black uppercase mb-1">
-                                    <span className="text-slate-500">Mission Progress</span>
-                                    <span className="text-emerald-400">{missionProgress}%</span>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-end">
+                                        <span className="uppercase-label !text-[8px]">Mission Execution</span>
+                                        <span className="font-mono-data text-xs text-emerald-400">{missionProgress}%</span>
+                                    </div>
+                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div 
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${missionProgress}%` }}
+                                            className="h-full bg-emerald-500 relative"
+                                        >
+                                            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                        </motion.div>
+                                    </div>
                                 </div>
-                                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full transition-all duration-500" style={{ width: `${missionProgress}%` }}></div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="uppercase-label !text-[8px]">Propulsion</div>
+                                        <div className="font-mono-data text-xs text-slate-200">{scout.speed ? scout.speed.toFixed(1) : 0} <span className="text-[8px] opacity-40">m/s</span></div>
+                                    </div>
+                                    <div>
+                                        <div className="uppercase-label !text-[8px]">Altitude</div>
+                                        <div className="font-mono-data text-xs text-slate-200">{scout.alt ? scout.alt.toFixed(1) : 0} <span className="text-[8px] opacity-40">m</span></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </Card>
 
-                    <Card title="Mission Control" className="bg-gradient-to-br from-white to-slate-50 border-emerald-100 shadow-sm">
-                        <div className="space-y-4">
-                            <RcSlider label="Takeoff Alt" val={takeoffAlt} setVal={setTakeoffAlt} />
-                            <div className="grid grid-cols-2 gap-2 mt-2">
-                                <Button variant="success" onClick={() => sendCommand('arm')}>ARM</Button>
-                                <Button variant="primary" onClick={() => sendCommand('takeoff', { alt: takeoffAlt })}>TAKEOFF</Button>
-                                <Button variant="warning" onClick={() => sendCommand('disarm')}>KILL</Button>
-                                <Button variant="danger" onClick={() => sendCommand('land')}>LAND</Button>
+                    {/* Mission Core Card */}
+                    <Card title="Mission Sequence" icon={<span className="text-amber-400">✦</span>}>
+                        <div className="space-y-3">
+                            <RcSlider label="Target altitude" val={takeoffAlt} setVal={setTakeoffAlt} />
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button variant="success" onClick={() => sendCommand('arm')}>Initiate Arm</Button>
+                                <Button variant="primary" onClick={() => sendCommand('takeoff', { alt: takeoffAlt })}>Takeoff</Button>
+                                <Button className="col-span-2 !bg-rose-500/10 !text-rose-400 !border-rose-500/30 hover:!bg-rose-500/20" onClick={() => sendCommand('land')}>Immediate Land</Button>
                             </div>
-                            <div className="flex gap-2 pt-2 border-t border-slate-50">
+                            
+                            <div className="flex gap-2 pt-2">
                                 <select 
                                     value={flightMode} 
                                     onChange={(e) => setFlightMode(e.target.value)}
-                                    className="flex-1 text-[10px] font-bold bg-slate-50 border border-slate-200 rounded px-2 outline-none uppercase h-8"
+                                    className="flex-1 text-[11px] font-bold bg-white/5 border border-white/10 rounded-lg px-3 outline-none uppercase h-9 text-slate-300 focus:border-emerald-500/50"
                                 >
                                     <option value="STABILIZE">STABILIZE</option>
                                     <option value="LOITER">LOITER</option>
                                     <option value="AUTO">AUTO MISSION</option>
                                     <option value="RTL">RETURN HOME</option>
                                 </select>
-                                <Button variant="secondary" className="h-8" onClick={() => sendCommand('set_mode', { mode: flightMode })}>SET</Button>
+                                <Button variant="secondary" className="h-9 px-4" onClick={() => sendCommand('set_mode', { mode: flightMode })}>Set</Button>
                             </div>
                         </div>
                     </Card>
 
-                    <Card title="Strategic Planner">
-                        <div className="flex gap-2 mb-3">
-                            <Button variant={drawMode === 'mission' ? 'primary' : 'secondary'} onClick={() => setDrawMode('mission')} className="flex-1">Waypoints</Button>
-                            <Button variant={drawMode === 'area' ? 'warning' : 'secondary'} onClick={() => setDrawMode('area')} className="flex-1">Polygon</Button>
+                    {/* Planning Card */}
+                    <Card title="Strategy Engine" icon={<span className="text-emerald-400">▣</span>}>
+                        <div className="flex gap-2 mb-3 bg-white/5 p-1 rounded-lg border border-white/5">
+                            <button 
+                                onClick={() => setDrawMode('mission')} 
+                                className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-md transition-all ${drawMode === 'mission' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                Waypoints
+                            </button>
+                            <button 
+                                onClick={() => setDrawMode('area')} 
+                                className={`flex-1 py-2 text-[9px] font-bold uppercase rounded-md transition-all ${drawMode === 'area' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                Area Grid
+                            </button>
                         </div>
                         {drawMode === 'area' ? (
-                            <Button variant="primary" onClick={generatePath} className="w-full">Generate Scan Grid</Button>
+                            <Button variant="success" onClick={generatePath} className="w-full">Initialize Path Compute</Button>
                         ) : (
                             <div className="space-y-2">
-                                <Button variant="success" onClick={uploadMission} className="w-full italic">📡 Deployed Points</Button>
-                                <label className="block w-full text-center p-2 border border-dashed border-slate-300 rounded cursor-pointer hover:bg-slate-50 transition-colors">
-                                    <span className="text-[9px] font-black uppercase text-slate-400">Import KML File</span>
-                                    <input type="file" accept=".kml" className="hidden" onChange={handleKMLUpload} />
+                                <Button variant="primary" onClick={uploadMission} className="w-full">Sync Flight Pattern</Button>
+                                <label className="block w-full group">
+                                    <div className="text-center py-2 px-4 border border-dashed border-white/10 rounded-lg cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all">
+                                        <span className="text-[10px] uppercase font-bold text-slate-500 group-hover:text-emerald-400">Import KML Registry</span>
+                                        <input type="file" accept=".kml" className="hidden" onChange={handleKMLUpload} />
+                                    </div>
                                 </label>
                             </div>
                         )}
                     </Card>
 
-                    <Card title="Intelligence Analytics">
+                    {/* Analytics Card */}
+                    <Card title="Data Intelligence" icon={<span className="text-blue-400">◈</span>}>
                         <div className="grid grid-cols-2 gap-2 mb-4">
-                            <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Detections</div>
-                                <div className="text-2xl font-black">{analytics.total_detections}</div>
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <div className="uppercase-label !text-[7px] mb-1">Signal Hits</div>
+                                <div className="text-xl font-bold font-mono-data">{analytics.total_detections}</div>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Coverage</div>
-                                <div className="text-2xl font-black text-emerald-600">{analytics.acres_scanned.toFixed(2)}ac</div>
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <div className="uppercase-label !text-[7px] mb-1">Scan Yield</div>
+                                <div className="text-xl font-bold font-mono-data text-emerald-400">{analytics.acres_scanned.toFixed(2)}ac</div>
                             </div>
                         </div>
-                        <div className="space-y-1 px-1">
+                        <div className="space-y-2">
                             {Object.entries(analytics.distribution).map(([status, count]) => (
-                                <div key={status} className="flex justify-between items-center text-[10px] font-bold uppercase py-1 border-b border-slate-50 last:border-0">
-                                    <span className="text-slate-400">{status}</span>
-                                    <span className={status === 'healthy' ? 'text-emerald-500' : 'text-rose-500'}>{count}</span>
+                                <div key={status} className="flex justify-between items-center text-[10px] font-mono-data py-1.5 px-2 rounded bg-white/2 border border-white/5">
+                                    <span className="text-slate-500 uppercase">{status}</span>
+                                    <span className={`font-bold ${status === 'healthy' ? 'text-emerald-500' : 'text-rose-500'}`}>{count}</span>
                                 </div>
                             ))}
                         </div>
                     </Card>
 
-                    <Card title="Tactical Incident Log">
-                        <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-[9px]">
-                            {detections.length === 0 && <div className="text-center text-slate-400 py-4 italic">Scanning for anomalies...</div>}
-                            {detections.map((d, i) => (
-                                <div key={d.id || i} className="p-2 bg-slate-50 rounded border border-slate-200 flex flex-col gap-1">
-                                    <div className="flex justify-between font-black uppercase tracking-tighter">
-                                        <span>{d.crop_type}</span>
-                                        <span className={d.crop_status === 'healthy' ? 'text-emerald-600' : 'text-rose-600'}>{d.crop_status}</span>
-                                    </div>
-                                    <div className="font-mono text-slate-400">{d.lat.toFixed(6)}, {d.lon.toFixed(6)}</div>
-                                </div>
-                            ))}
+                    {/* Log Card */}
+                    <Card title="Incident Protocol" icon={<span className="text-rose-400">▤</span>}>
+                        <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                            <AnimatePresence mode="popLayout">
+                                {detections.length === 0 && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-slate-600 py-6 italic text-[10px]">
+                                        Listening for telemetric events...
+                                    </motion.div>
+                                )}
+                                {detections.map((d, i) => (
+                                    <motion.div 
+                                        key={d.id || i} 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="p-3 bg-white/2 rounded-lg border border-white/5 flex flex-col gap-1 transition-all hover:border-white/20"
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-bold text-[10px] text-slate-200 uppercase tracking-tight">{d.crop_type}</span>
+                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${d.crop_status === 'healthy' ? 'text-emerald-400 bg-emerald-400/10' : 'text-rose-400 bg-rose-400/10'}`}>
+                                                {d.crop_status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="font-mono text-[9px] text-slate-500">{d.lat.toFixed(6)}, {d.lon.toFixed(6)}</div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
                     </Card>
                 </div>
             </aside>
 
-            <main className="flex-1 relative">
+            {/* Main Section */}
+            <main className="flex-1 relative overflow-hidden bg-[#0a0c10]">
                 <MapContainer center={[16.5062, 80.6480]} zoom={18} zoomControl={false} style={{ height: "100%", width: "100%" }}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; National GIS" />
+                    <TileLayer 
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+                    />
                     <MapClicker addWaypoint={handleMapClick} mode={drawMode} />
                     <DroneTracker position={scout} followMode={followMode} />
                     
                     {waypoints.map((wp, i) => <Marker key={i} position={wp} icon={scoutIcon} opacity={0.4} />)}
-                    <Polyline positions={waypoints} color="#10b981" weight={2} dashArray="5, 10" />
-                    {polygonPoints.length > 0 && <Polygon positions={polygonPoints} color="#f59e0b" weight={1} fillOpacity={0.05} />}
+                    <Polyline positions={waypoints} color="#10b981" weight={1.5} dashArray="8, 12" />
+                    {polygonPoints.length > 0 && <Polygon positions={polygonPoints} color="#f59e0b" weight={1} fillOpacity={0.03} />}
                     
-                    <Marker position={[scout.lat, scout.lon]} icon={scoutIcon}><Popup><span className="font-black italic">UAV_ACTIVE</span></Popup></Marker>
+                    <Marker position={[scout.lat, scout.lon]} icon={scoutIcon}>
+                        <Popup>
+                            <div className="p-2 space-y-2">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase">Unit: Scout_01</div>
+                                <div className="text-xs font-mono font-bold text-emerald-400">LAT: {scout.lat.toFixed(6)}</div>
+                                <div className="text-xs font-mono font-bold text-emerald-400">LON: {scout.lon.toFixed(6)}</div>
+                            </div>
+                        </Popup>
+                    </Marker>
                     
                     {detections.map((d, i) => (
                         <Marker key={d.id || i} position={[d.lat, d.lon]} icon={d.crop_status === 'healthy' ? healthyIcon : d.crop_status === 'diseased' ? diseasedIcon : weedIcon}>
                             <Popup>
-                                <div className="font-black text-[10px] uppercase">
-                                    <div className="text-slate-400">{d.crop_type}</div>
-                                    <div className={d.crop_status === 'healthy' ? 'text-emerald-500' : 'text-rose-500'}>{d.crop_status}</div>
-                                    <div className="mt-2 pt-1 border-t border-slate-100 text-[8px]">Confidence: {(d.confidence*100).toFixed(1)}%</div>
+                                <div className="p-2 space-y-1">
+                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{d.crop_type}</div>
+                                    <div className={`text-sm font-bold ${d.crop_status === 'healthy' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {d.crop_status.toUpperCase()}
+                                    </div>
+                                    <div className="pt-2 border-t border-white/10 flex justify-between items-center gap-4">
+                                        <span className="text-[9px] text-slate-500">Confidence</span>
+                                        <span className="text-[10px] font-mono font-bold">{(d.confidence*100).toFixed(1)}%</span>
+                                    </div>
                                 </div>
                             </Popup>
                         </Marker>
                     ))}
                 </MapContainer>
 
-                <div className="absolute top-4 right-4 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded shadow-2xl z-[1000] font-mono text-[10px] flex flex-col gap-1">
-                    <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div><span>SAT_COMM_LINK: ACTIVE</span></div>
-                    <div className="opacity-40">ENCRYPTION: AES-256-GCM</div>
+                {/* Tactical Overlays */}
+                <div className="absolute top-6 left-6 z-[1000] flex gap-4">
+                    <button 
+                         onClick={() => setFollowMode(!followMode)}
+                         className={`px-4 py-2 border rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-2 backdrop-blur-xl ${followMode ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-black/60 border-white/10 text-slate-400'}`}
+                    >
+                        <div className={`w-1.5 h-1.5 rounded-full ${followMode ? 'bg-white animate-pulse' : 'bg-slate-500'}`}></div>
+                        Auto-Track {followMode ? 'ON' : 'OFF'}
+                    </button>
+                    
+                    <div className="bg-black/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full text-[10px] font-bold text-slate-400 flex items-center gap-3">
+                         <span className="flex items-center gap-1.5"><div className="w-1 h-1 bg-emerald-500 rounded-full"></div> SAT_LINK</span>
+                         <div className="w-px h-3 bg-white/10"></div>
+                         <span className="font-mono text-emerald-500/80 uppercase">AES_SECURE</span>
+                    </div>
                 </div>
 
-                <div className="absolute bottom-8 left-8 bg-slate-900/90 backdrop-blur-xl px-6 py-5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[1000] border border-white/10 min-w-[280px] text-white">
-                    <div className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
-                        Tactical Navigation HUD
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Latitude</div>
-                            <div className="text-sm font-mono font-bold tracking-tight">{scout.lat.toFixed(7)}°</div>
+                <div className="absolute bottom-10 right-10 z-[1000]">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[#0f172a]/90 backdrop-blur-2xl px-8 py-6 rounded-3xl border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] min-w-[320px]"
+                    >
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 tracking-[0.2em] uppercase">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-sm"></div>
+                                Tactical HUD
+                            </div>
+                            <div className="text-[8px] font-mono text-slate-500">REF_ID: CR19-Z</div>
                         </div>
-                        <div>
-                            <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Longitude</div>
-                            <div className="text-sm font-mono font-bold tracking-tight">{scout.lon.toFixed(7)}°</div>
+                        
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                            <div className="space-y-1">
+                                <div className="uppercase-label !text-[8px] flex items-center gap-1.5">
+                                     <div className="w-1 h-1 bg-blue-500 rounded-full"></div> Latitude
+                                </div>
+                                <div className="text-xl font-mono-data font-bold text-slate-100 tracking-tighter">
+                                    {scout.lat.toFixed(7)}°
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="uppercase-label !text-[8px] flex items-center gap-1.5">
+                                     <div className="w-1 h-1 bg-blue-500 rounded-full"></div> Longitude
+                                </div>
+                                <div className="text-xl font-mono-data font-bold text-slate-100 tracking-tighter">
+                                    {scout.lon.toFixed(7)}°
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-[8px] font-mono text-slate-400">
-                        <span>SYS_UPTIME: {(performance.now()/1000).toFixed(0)}S</span>
-                        <span className="text-emerald-500/50 italic font-black">STREAMING_REALTIME</span>
-                    </div>
+                        
+                        <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-slate-500 uppercase font-bold">System Uptime</span>
+                                <span className="text-[10px] font-mono-data font-bold text-emerald-500/80">{(performance.now()/1000).toFixed(0)} <span className="text-[8px]">SECONDS</span></span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <span className="text-[8px] text-slate-500 uppercase font-bold">Signal Status</span>
+                                <span className="text-[10px] font-mono-data font-bold text-emerald-500/80 animate-pulse">OPTIMAL</span>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </main>
         </div>

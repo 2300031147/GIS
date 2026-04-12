@@ -258,44 +258,56 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#05070a' },
   header: { 
-    height: 100, paddingTop: 50, paddingHorizontal: 20, 
-    backgroundColor: '#0f172a', flexDirection: 'row', justifyContent: 'space-between' 
+    height: 110, paddingTop: 60, paddingHorizontal: 24, 
+    backgroundColor: '#0a0c10', flexDirection: 'row', justifyContent: 'space-between',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)'
   },
-  headerTitle: { color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5, textTransform: 'uppercase' },
-  syncButton: { color: '#10b981', fontWeight: '900', fontSize: 12 },
-  map: { height: 350, width: '100%' },
+  headerTitle: { color: 'white', fontSize: 13, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.9 },
+  syncButton: { color: '#10b981', fontWeight: '800', fontSize: 11, letterSpacing: 0.5 },
+  map: { height: 380, width: '100%', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   captureButton: { 
-    backgroundColor: '#0f172a', margin: 20, padding: 20, 
-    borderRadius: 12, alignItems: 'center', shadowColor: '#10b981', 
-    shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20,
-    borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)'
+    backgroundColor: '#11141b', margin: 24, padding: 22, 
+    borderRadius: 16, alignItems: 'center', 
+    borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)',
+    shadowColor: '#10b981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12
   },
-  captureText: { color: '#10b981', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
-  reportsSection: { flex: 1, padding: 20 },
-  sectionTitle: { fontSize: 10, fontWeight: '900', color: '#ccc', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 2 },
+  captureText: { color: '#10b981', fontWeight: '800', fontSize: 12, letterSpacing: 2 },
+  reportsSection: { flex: 1, padding: 24 },
+  sectionTitle: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.3)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 2 },
   reportItem: { 
-    backgroundColor: 'white', padding: 15, borderRadius: 4, 
-    marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: '#f0f0f0'
+    backgroundColor: '#0a0c10', padding: 18, borderRadius: 12, 
+    marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)'
   },
-  reportText: { fontSize: 12, color: '#333', fontWeight: 'bold' },
-  reportStatus: { fontSize: 10, fontWeight: '900' },
-  cameraFrame: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 60 },
+  reportText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600', fontFamily: 'monospace' },
+  reportStatus: { fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  cameraFrame: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 80 },
   notesContainer: { 
-    width: '80%', backgroundColor: 'rgba(0,0,0,0.6)', 
-    borderRadius: 8, padding: 10, marginBottom: 20,
+    width: '85%', backgroundColor: 'rgba(10,12,16,0.9)', 
+    borderRadius: 12, padding: 16, marginBottom: 30,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'
   },
-  notesInput: { color: 'white', fontSize: 13, fontWeight: 'bold' },
-  takePicButton: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  outerCircle: { width: 66, height: 66, borderRadius: 33, borderWidth: 3, borderColor: 'white', justifyContent: 'center', alignItems: 'center' },
-  innerCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'white' },
-  closeCamera: { position: 'absolute', top: 50, right: 30, backgroundColor: 'rgba(0,0,0,0.8)', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  settingsBox: { backgroundColor: '#0f172a', padding: 25, borderRadius: 15, width: '80%', borderWidth: 1, borderColor: '#10b981' },
-  settingsTitle: { color: 'white', fontSize: 12, fontWeight: '900', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 1 },
-  settingsInput: { backgroundColor: 'rgba(255,255,255,0.05)', color: 'white', padding: 15, borderRadius: 8, marginBottom: 15, fontSize: 13, borderBottomWidth: 2, borderBottomColor: '#10b981' },
-  settingsButton: { backgroundColor: '#10b981', padding: 15, borderRadius: 8, alignItems: 'center' }
+  notesInput: { color: 'white', fontSize: 14, fontWeight: '600' },
+  takePicButton: { width: 84, height: 84, borderRadius: 42, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  outerCircle: { width: 68, height: 68, borderRadius: 34, borderWidth: 4, borderColor: 'white', justifyContent: 'center', alignItems: 'center' },
+  innerCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'white' },
+  closeCamera: { 
+    position: 'absolute', top: 60, right: 24, 
+    backgroundColor: 'rgba(0,0,0,0.8)', width: 44, height: 44, borderRadius: 22, 
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' 
+  },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+  settingsBox: { 
+    backgroundColor: '#0a0c10', padding: 30, borderRadius: 24, width: '85%', 
+    borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', shadowColor: '#10b981', shadowOpacity: 0.1, shadowRadius: 30
+  },
+  settingsTitle: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '800', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1.5 },
+  settingsInput: { 
+    backgroundColor: 'rgba(255,255,255,0.03)', color: 'white', padding: 18, 
+    borderRadius: 12, marginBottom: 20, fontSize: 14, fontWeight: '600',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' 
+  },
+  settingsButton: { backgroundColor: '#10b981', padding: 18, borderRadius: 12, alignItems: 'center' }
 });
